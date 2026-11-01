@@ -140,6 +140,14 @@ Answer (Gemini): turns the retrieved facts into a short, spoken-style answer
 - **Router model is configurable** (`ROUTER_MODEL`, `ANSWER_MODEL`); currently `gemini-3.5-flash-lite`
   for both, end-to-end latency about 3 to 4.5 seconds per question.
 
+### API (`backend/main.py`)
+- FastAPI with `POST /ask` (answer, route, reasoning, Cypher, hotels, timing) and `GET /health`
+  (API + Neo4j check). Interactive docs generated automatically at `/docs`.
+- One shared `GraphRAG` engine created on the first request (lazy), which also suits serverless hosting.
+- Input limited to 3-300 characters to protect LLM quota; clear status codes: 429 quota, 503 Neo4j down, 500 other.
+- CORS restricted to `ALLOWED_ORIGINS` (default: the local Next.js dev server).
+- Endpoints are plain `def`, so FastAPI runs slow LLM calls in worker threads without blocking others.
+
 ### Secrets
 - Credentials live only in `.env`, which `.gitignore` excludes. `.env.example` documents the needed
   variables without real values. `git status` is checked before every commit.
@@ -253,5 +261,5 @@ How to handle it in production:
 - [x] Vector index on hotel documents (Gemini Embedding 001)
 - [x] Router + text-to-Cypher + hybrid retrieval (graph / vector / both, with fallback)
 - [x] Plain vector RAG baseline, scored on the 8 test questions
-- [ ] FastAPI backend
+- [x] FastAPI backend
 - [ ] Next.js frontend on Vercel showing the answer and the graph path used

@@ -78,7 +78,7 @@ frontend/     Next.js demo UI
 - [x] Vector index on hotel documents (Gemini Embedding 001)
 - [x] Router + text-to-Cypher + hybrid retrieval (graph / vector / both, with fallback)
 - [x] Vector RAG baseline and evaluation on test questions (vector RAG 4/8, GraphRAG 8/8; see `data/eval/report.md`)
-- [ ] FastAPI backend
+- [x] FastAPI backend (`/ask`, `/health`, interactive docs at `/docs`)
 - [ ] Next.js frontend on Vercel
 
 ## Setup
@@ -97,6 +97,10 @@ frontend/     Next.js demo UI
    ```bash
    python scripts/ask.py "Which pet-friendly hotels are within 2 km of a fort?"
    python scripts/ask.py "A quiet place in the mountains that allows pets"
+   ```
+7. Run the API and try it in the browser at http://localhost:8000/docs:
+   ```bash
+   uvicorn backend.main:app --reload --port 8000
    ```
 
 ## Design notes
