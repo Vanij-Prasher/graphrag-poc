@@ -80,6 +80,48 @@ conversational (voice) assistant. The assistant must answer precise, multi-hop q
 - Extractions are **cached** in `data/extracted/policies.json`, so the graph can be rebuilt without
   calling the LLM again.
 
+### Vector search
+- **Gemini Embedding 001**, 3,072 dimensions, cosine similarity, stored on the `Document` nodes with a
+  Neo4j vector index (`document_embeddings`). Graph and vectors live in the same database, so a vector
+  hit can be followed straight into the graph (document → hotel → city, policies, amenities).
+- **Task types:** documents are embedded as `RETRIEVAL_DOCUMENT`, questions as `RETRIEVAL_QUERY`;
+  the model optimises each side for retrieval.
+- **One document = one chunk**, because each hotel document is short. Real documents would be chunked first.
+- All 20 documents are embedded in **one API request**.
+
+### Choosing between graph and vector search (routing)
+Vector search *understands* loosely worded questions; graph queries *answer precisely*. The system uses
+each for what it does best:
+
+| Question type | Example | Route |
+|---|---|---|
+| Precise: clear conditions, numbers, filters | "Pet-friendly hotels within 2 km of a fort" | Graph (text-to-Cypher) |
+| Fuzzy: feelings, descriptions | "Somewhere romantic with a nice view" | Vector |
+| Mixed: fuzzy wish plus hard rule | "A quiet place in the mountains that allows pets" | Both: vector candidates, filtered by graph conditions |
+
+```
+User question
+     │
+     ▼
+Router (Gemini): picks graph / vector / both, writes Cypher if needed
+     │
+     ├── Graph  → run the Cypher → exact facts
+     ├── Vector → embed question → similar hotels → add their facts from the graph
+     └── Both   → vector candidates, filtered by the graph conditions
+     │
+     ▼
+Answer (Gemini): turns the retrieved facts into a short, spoken-style answer
+```
+
+- **Text-to-Cypher:** Gemini receives the graph schema and the question, and writes the Cypher query.
+- **Routing and Cypher generation happen in one call**, so each question costs 2 LLM calls
+  (route + answer), which matters under free-tier limits.
+- **Fallback:** if generated Cypher fails or returns nothing, fall back to vector search instead of
+  answering "I don't know". LLM-written queries are sometimes wrong.
+- **Read-only safeguard:** generated Cypher containing `CREATE`, `DELETE`, `SET`, `MERGE` etc. is rejected.
+  An LLM never writes to the database unchecked.
+- **Transparency:** every answer returns the route taken and the Cypher used, so it can be checked.
+
 ### Secrets
 - Credentials live only in `.env`, which `.gitignore` excludes. `.env.example` documents the needed
   variables without real values. `git status` is checked before every commit.
@@ -96,6 +138,9 @@ conversational (voice) assistant. The assistant must answer precise, multi-hop q
 | `429 RESOURCE_EXHAUSTED` | Free tier allows ~20 requests/day per model; retries also count | Batch 5 hotels per call (20 requests → 4), pause between calls, stop immediately on a daily-quota error | Retries can burn quota; fail fast on limits that will not recover |
 | `404` for `gemini-2.5-flash-lite` | Model listed, but no longer available to new API keys | Listed models via the API and tested candidates with a one-word request; switched to `gemini-3.5-flash-lite`; fail fast on 404 | Verify model availability programmatically instead of guessing |
 | One model for everything would exhaust quota | Daily limits are per model | `EXTRACTION_MODEL` (one-time ingestion) separate from `GEMINI_MODEL` (live answers) | Match model to task: lighter models for simple extraction |
+| AuraDB Free instance paused | Free tier pauses instances after a few days without activity | Resume from the console (data is kept); check it is running before demos | Free infrastructure needs keep-alive habits; ingestion is scripted so the graph can be rebuilt if needed |
+| "Property `embedding` does not exist" warning | First run queried a property no node had yet | None needed: harmless, disappears once embeddings exist | Read warnings before reacting; not every warning is an error |
+| `db.index.vector.queryNodes` deprecated | Newer Neo4j versions replace it with the `SEARCH` clause | Still works; the retrieval layer will use the neo4j-graphrag library | Track platform changes, but don't rewrite working code mid-phase |
 
 ---
 
@@ -107,6 +152,13 @@ conversational (voice) assistant. The assistant must answer precise, multi-hop q
 - Test question 2 (*pet-friendly hotels within 2 km of a fort*) answered correctly with one Cypher
   query combining CSV facts and LLM-extracted facts: **Amber Fort View Hotel**, in milliseconds.
 - Gemini Embedding 001 returns **3,072-dimension** vectors (needed for the vector index).
+- Vector index: **20 documents embedded in one request**, index online and fully populated.
+- Fuzzy question *"a quiet place for a family trip in the mountains"*: **4 of the top 5 results are
+  Manali hotels**, though "Manali" is not in the question (the 5th, a hill resort, is also reasonable).
+- Precise question *"pet-friendly hotel near a fort"* with vector search alone: the correct hotel ranked
+  first, but **4 of the top 5 were wrong** (no pets, or no fort nearby), and all scores sat between
+  0.835 and 0.865, so there is no clear cut-off. The graph query returns exactly one, correct, result.
+  This is the main argument for hybrid retrieval.
 
 ---
 
@@ -136,8 +188,8 @@ How to handle it in production:
 
 ## 6. Next steps
 
-- [ ] Vector index on hotel documents (Gemini Embedding 001)
-- [ ] Hybrid retrieval: vector search + graph traversal + text-to-Cypher
+- [x] Vector index on hotel documents (Gemini Embedding 001)
+- [ ] Router + text-to-Cypher + hybrid retrieval (graph / vector / both, with fallback)
 - [ ] Plain vector RAG baseline, scored on the 8 test questions
 - [ ] FastAPI backend
 - [ ] Next.js frontend on Vercel showing the answer and the graph path used

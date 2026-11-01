@@ -73,9 +73,10 @@ frontend/     Next.js demo UI
 ## Status
 
 - [x] Dataset and graph schema
-- [ ] Load structured data into Neo4j
-- [ ] LLM extraction of policies from text
-- [ ] Hybrid retrieval (vector + graph + text-to-Cypher)
+- [x] Load structured data into Neo4j
+- [x] LLM extraction of policies from text (Gemini, structured output, 120/120 fields correct)
+- [x] Vector index on hotel documents (Gemini Embedding 001)
+- [ ] Router + text-to-Cypher + hybrid retrieval (graph / vector / both, with fallback)
 - [ ] Vector RAG baseline and evaluation on test questions
 - [ ] FastAPI backend
 - [ ] Next.js frontend on Vercel
@@ -83,7 +84,15 @@ frontend/     Next.js demo UI
 ## Setup
 
 1. Copy `.env.example` to `.env` and fill in your Neo4j and Gemini credentials.
-2. Detailed setup steps will be added as each phase is built.
+2. Install dependencies: `pip install -r requirements.txt`
+3. Check connections: `python scripts/test_connection.py`
+4. Build the graph (run once, in order):
+   ```bash
+   python ingestion/load_structured.py    # CSVs -> graph
+   python ingestion/extract_policies.py   # text -> policies (uses cached extractions if present)
+   python ingestion/embed_documents.py    # documents -> embeddings + vector index
+   ```
+5. Try semantic search: `python scripts/vector_search.py "a quiet place for a family trip in the mountains"`
 
 ## Design notes
 
