@@ -76,7 +76,7 @@ frontend/     Next.js demo UI
 - [x] Load structured data into Neo4j
 - [x] LLM extraction of policies from text (Gemini, structured output, 120/120 fields correct)
 - [x] Vector index on hotel documents (Gemini Embedding 001)
-- [ ] Router + text-to-Cypher + hybrid retrieval (graph / vector / both, with fallback)
+- [x] Router + text-to-Cypher + hybrid retrieval (graph / vector / both, with fallback)
 - [ ] Vector RAG baseline and evaluation on test questions
 - [ ] FastAPI backend
 - [ ] Next.js frontend on Vercel
@@ -93,6 +93,11 @@ frontend/     Next.js demo UI
    python ingestion/embed_documents.py    # documents -> embeddings + vector index
    ```
 5. Try semantic search: `python scripts/vector_search.py "a quiet place for a family trip in the mountains"`
+6. Ask the assistant (routes to graph, vector or both, and answers in a spoken style):
+   ```bash
+   python scripts/ask.py "Which pet-friendly hotels are within 2 km of a fort?"
+   python scripts/ask.py "A quiet place in the mountains that allows pets"
+   ```
 
 ## Design notes
 

@@ -122,6 +122,24 @@ Answer (Gemini): turns the retrieved facts into a short, spoken-style answer
   An LLM never writes to the database unchecked.
 - **Transparency:** every answer returns the route taken and the Cypher used, so it can be checked.
 
+### Hybrid retrieval implementation (`backend/rag.py`)
+- **Written directly instead of using neo4j-graphrag retrievers.** The router has a custom "both" mode
+  (vector candidates filtered by a graph query) and every answer must expose the exact Cypher used;
+  both are simpler to control in our own code. neo4j-graphrag remains an option for later.
+- **The router sees the real values in the graph** (city, policy, amenity and attraction names), so
+  generated Cypher uses exact spellings like `'Pets Allowed'` instead of guessing.
+- **Hard conditions vs descriptions:** only explicit conditions (named city, price, capacity, distance,
+  named amenity or policy, rating) go into Cypher. Vague words ("mountains", "quiet", "romantic") go to
+  vector search. Learned the hard way: see issues table.
+- **Two layers of write protection:** keyword check on generated Cypher, then execution in a read-only
+  transaction, so Neo4j itself refuses writes.
+- **Answers are written for speech:** at most 3 short sentences, at most 2 recommendations, numbers
+  written as words so a text-to-speech engine reads them naturally and consistently.
+- **Low thinking level and a 60-second timeout** on every Gemini call: lower latency, and the system can
+  never hang waiting for an API.
+- **Router model is configurable** (`ROUTER_MODEL`, `ANSWER_MODEL`); currently `gemini-3.5-flash-lite`
+  for both, end-to-end latency about 3 to 4.5 seconds per question.
+
 ### Secrets
 - Credentials live only in `.env`, which `.gitignore` excludes. `.env.example` documents the needed
   variables without real values. `git status` is checked before every commit.
@@ -141,6 +159,10 @@ Answer (Gemini): turns the retrieved facts into a short, spoken-style answer
 | AuraDB Free instance paused | Free tier pauses instances after a few days without activity | Resume from the console (data is kept); check it is running before demos | Free infrastructure needs keep-alive habits; ingestion is scripted so the graph can be rebuilt if needed |
 | "Property `embedding` does not exist" warning | First run queried a property no node had yet | None needed: harmless, disappears once embeddings exist | Read warnings before reacting; not every warning is an error |
 | `db.index.vector.queryNodes` deprecated | Newer Neo4j versions replace it with the `SEARCH` clause | Still works; the retrieval layer will use the neo4j-graphrag library | Track platform changes, but don't rewrite working code mid-phase |
+| Script hung for minutes, then "server disconnected" | `gemini-3.8-flash` was failing on Google's side | 60-second timeout on all calls; router switched to `gemini-3.5-flash-lite` via `ROUTER_MODEL` | External APIs fail; timeouts and swappable models are essential |
+| Same question produced different Cypher; once filtered by `Manali, Udaipur, Jaipur` for "mountains" | The router turned a vague word into a guessed hard filter; LLM output varies between runs | Prompt rule: only explicit conditions go into Cypher, vague descriptions go to vector search | Guessed conditions look precise but are invented; test the same question more than once |
+| Answer said "I found seven hotels" for a mountain question | In the "both" route the Cypher rows are only a filter (all pet-friendly hotels), but they were passed to the answer model, which counted them | Pass filter rows to the answer model only in the "graph" route | Be explicit about what each piece of context *means* when giving it to an LLM |
+| Answer formatting inconsistent (digits vs words, "5600rupees") | Answer prompt didn't specify number format | Prompt: write numbers as words, as spoken; max 3 sentences | Voice output needs explicit formatting rules |
 
 ---
 
@@ -159,6 +181,13 @@ Answer (Gemini): turns the retrieved facts into a short, spoken-style answer
   first, but **4 of the top 5 were wrong** (no pets, or no fort nearby), and all scores sat between
   0.835 and 0.865, so there is no clear cut-off. The graph query returns exactly one, correct, result.
   This is the main argument for hybrid retrieval.
+- Hybrid retrieval, end to end (router + retrieval + spoken answer), about 3 to 4.5 seconds per question:
+
+| Question | Route | Outcome |
+|---|---|---|
+| Pet-friendly hotels within 2 km of a fort | Graph | Correct: Amber Fort View Hotel; generated Cypher matched the hand-written one |
+| Somewhere romantic with a beautiful view | Vector | Reasonable picks, but missed Lake Pichola Palace (see limitations) |
+| A quiet place in the mountains that allows pets | Both | After fixes: Cypher filters pets only, vector ranking puts Manali hotels first |
 
 ---
 
@@ -176,6 +205,17 @@ How to handle it in production:
   "no extra cost" in the text).
 - Keep an evaluation set and re-score extraction whenever the prompt, schema or model changes.
 
+### Hybrid retrieval limitations
+- **Non-determinism:** the same question can produce different routes, Cypher or recommendations
+  across runs, even at temperature 0. Needs evaluation over repeated runs, not single demos.
+- **Similarity follows wording:** "romantic with a beautiful view" ranked hotels whose text contains
+  "view" above the lakeside palace that best fits the meaning. Fix in production: enrich descriptions
+  or tag themes (romantic, family, business) during extraction.
+- **No terrain data:** "mountains" can only be handled by similarity. A `terrain` or `region` property on
+  cities would make it a checkable fact.
+- **Model quirks:** the lite model occasionally drops spaces ("OldManali"); a stronger answer model or a
+  light post-processing step would fix this.
+
 ### Other limitations
 - Synthetic text is clean and consistent; real documents are messier, so real-world extraction
   accuracy will be lower than 100% and needs ongoing evaluation.
@@ -189,7 +229,7 @@ How to handle it in production:
 ## 6. Next steps
 
 - [x] Vector index on hotel documents (Gemini Embedding 001)
-- [ ] Router + text-to-Cypher + hybrid retrieval (graph / vector / both, with fallback)
+- [x] Router + text-to-Cypher + hybrid retrieval (graph / vector / both, with fallback)
 - [ ] Plain vector RAG baseline, scored on the 8 test questions
 - [ ] FastAPI backend
 - [ ] Next.js frontend on Vercel showing the answer and the graph path used
