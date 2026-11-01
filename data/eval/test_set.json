@@ -1,0 +1,65 @@
+[
+  {
+    "id": "Q1",
+    "question": "Which hotels in Goa have a pool and offer free cancellation?",
+    "expected": [
+      "Calangute Shores Resort"
+    ]
+  },
+  {
+    "id": "Q2",
+    "question": "Which pet-friendly hotels are within 2 km of a fort?",
+    "expected": [
+      "Amber Fort View Hotel"
+    ]
+  },
+  {
+    "id": "Q3",
+    "question": "What is the cheapest room in Udaipur that can sleep 3 or more people?",
+    "expected": [
+      "Fateh Sagar Inn"
+    ]
+  },
+  {
+    "id": "Q4",
+    "question": "Which 5-star hotels with a spa have a guest rating above 4.5, and in which cities?",
+    "expected": [
+      "Marine Crest Hotel",
+      "Rajputana Palace Resort",
+      "Lake Pichola Palace"
+    ]
+  },
+  {
+    "id": "Q5",
+    "question": "Which hotels in Manali allow pets and have heating?",
+    "expected": [
+      "Snow Peak Retreat",
+      "Himalayan Pines Resort",
+      "Beas River Cottages"
+    ]
+  },
+  {
+    "id": "Q6",
+    "question": "Which hotels within 1 km of a beach include breakfast?",
+    "expected": [
+      "Calangute Shores Resort"
+    ]
+  },
+  {
+    "id": "Q7",
+    "question": "Which hotels have non-refundable bookings?",
+    "expected": [
+      "Juhu Palm Suites",
+      "Candolim Grand",
+      "Jaipur Budget Stay",
+      "Beas River Cottages"
+    ]
+  },
+  {
+    "id": "Q8",
+    "question": "I want to stay within 1 km of Hawa Mahal or City Palace in Jaipur and pay at the hotel. What are my options?",
+    "expected": [
+      "Pink City Haveli"
+    ]
+  }
+]

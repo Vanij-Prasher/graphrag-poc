@@ -77,7 +77,7 @@ frontend/     Next.js demo UI
 - [x] LLM extraction of policies from text (Gemini, structured output, 120/120 fields correct)
 - [x] Vector index on hotel documents (Gemini Embedding 001)
 - [x] Router + text-to-Cypher + hybrid retrieval (graph / vector / both, with fallback)
-- [ ] Vector RAG baseline and evaluation on test questions
+- [x] Vector RAG baseline and evaluation on test questions (vector RAG 4/8, GraphRAG 8/8; see `data/eval/report.md`)
 - [ ] FastAPI backend
 - [ ] Next.js frontend on Vercel
 

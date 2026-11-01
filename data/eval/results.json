@@ -1,0 +1,201 @@
+{
+  "vector_rag:Q1": {
+    "answer": "Calangute Shores Resort is in Goa, features a pool, and offers free cancellation up to forty-eight hours before check-in. The other Goa hotels do not have both a pool and free cancellation.",
+    "route": null,
+    "cypher": null,
+    "fallback": null,
+    "retrieved": [
+      "Calangute Shores Resort",
+      "Candolim Grand",
+      "Palolem Bay Huts",
+      "Panjim Heritage Stay",
+      "Marine Crest Hotel"
+    ],
+    "seconds": 3.3
+  },
+  "graph_rag:Q1": {
+    "answer": "Calangute Shores Resort in Goa has a pool and offers free cancellation up to forty-eight hours before check-in. It also features a large lagoon-style pool and a guest rating of four point four.",
+    "route": "graph",
+    "cypher": "MATCH (h:Hotel)-[:LOCATED_IN]->(c:City {name: 'Goa'}), (h)-[:HAS_AMENITY]->(a:Amenity {name: 'Pool'}), (h)-[:HAS_POLICY]->(p:Policy {name: 'Free Cancellation'}) RETURN h.id AS hotel_id, h.name AS hotel LIMIT 20",
+    "fallback": null,
+    "retrieved": [
+      "Calangute Shores Resort"
+    ],
+    "seconds": 4.5
+  },
+  "vector_rag:Q2": {
+    "answer": "Amber Fort View Hotel is pet-friendly and sits zero point seven kilometres from Amber Fort. Dogs are allowed here with prior approval and a refundable two thousand rupees deposit.",
+    "route": null,
+    "cypher": null,
+    "fallback": null,
+    "retrieved": [
+      "Amber Fort View Hotel",
+      "Pink City Haveli",
+      "Aravalli Hills Resort",
+      "Palolem Bay Huts",
+      "Panjim Heritage Stay"
+    ],
+    "seconds": 2.9
+  },
+  "graph_rag:Q2": {
+    "answer": "Amber Fort View Hotel is pet-friendly and sits zero point seven kilometres from Amber Fort. Dogs are allowed with prior approval and a refundable two thousand rupees deposit.",
+    "route": "graph",
+    "cypher": "MATCH (h:Hotel)-[:HAS_POLICY]->(:Policy {name: 'Pets Allowed'}), (h)-[n:NEAR]->(a:Attraction) WHERE a.category = 'Fort' AND n.distance_km <= 2 RETURN h.id AS hotel_id, h.name AS hotel, a.name AS attraction, n.distance_km AS distance LIMIT 20",
+    "fallback": null,
+    "retrieved": [
+      "Amber Fort View Hotel"
+    ],
+    "seconds": 4.2
+  },
+  "vector_rag:Q3": {
+    "answer": "The cheapest option for three or more people is Fateh Sagar Inn, offering a triple room for five thousand eight hundred rupees per night. Another choice is Aravalli Hills Resort, which has a family suite for eleven thousand two hundred rupees per night. Finally, Lake Pichola Palace offers a royal lake suite for thirty-eight thousand rupees per night.",
+    "route": null,
+    "cypher": null,
+    "fallback": null,
+    "retrieved": [
+      "Udaipur Courtyard Stay",
+      "Fateh Sagar Inn",
+      "Aravalli Hills Resort",
+      "Lake Pichola Palace",
+      "Jaipur Budget Stay"
+    ],
+    "seconds": 2.8
+  },
+  "graph_rag:Q3": {
+    "answer": "The cheapest room in Udaipur that can sleep three people is the triple room at Fateh Sagar Inn. It costs five thousand eight hundred rupees per night and can accommodate up to three guests. Fateh Sagar Inn is a mid-range three-star hotel facing Fateh Sagar Lake.",
+    "route": "graph",
+    "cypher": "MATCH (c:City {name: 'Udaipur'})<-[:LOCATED_IN]-(h:Hotel)-[:OFFERS]->(r:RoomType) WHERE r.max_guests >= 3 RETURN h.id AS hotel_id, h.name AS hotel, r.name AS room_type, r.price_inr AS price ORDER BY r.price_inr ASC LIMIT 1",
+    "fallback": null,
+    "retrieved": [
+      "Fateh Sagar Inn"
+    ],
+    "seconds": 3.2
+  },
+  "vector_rag:Q4": {
+    "answer": "We have two five star hotels with a spa and guest ratings above four point five. Rajputana Palace Resort is located in Jaipur with a rating of four point seven. Marine Crest Hotel is located in Mumbai with a rating of four point six.",
+    "route": null,
+    "cypher": null,
+    "fallback": null,
+    "retrieved": [
+      "Candolim Grand",
+      "Rajputana Palace Resort",
+      "Marine Crest Hotel",
+      "Himalayan Pines Resort",
+      "Aravalli Hills Resort"
+    ],
+    "seconds": 4.9
+  },
+  "graph_rag:Q4": {
+    "answer": "We have three five-star hotels with spas and guest ratings above four point five. Marine Crest Hotel in Mumbai features a popular rooftop pool and spa. Rajputana Palace Resort in Jaipur offers a sprawling luxury resort with a large spa. Lake Pichola Palace in Udaipur is a heritage luxury hotel on the banks of Lake Pichola.",
+    "route": "graph",
+    "cypher": "MATCH (h:Hotel)-[:LOCATED_IN]->(c:City), (h)-[:HAS_AMENITY]->(a:Amenity {name: 'Spa'}) WHERE h.star_rating = 5 AND h.guest_rating > 4.5 RETURN h.id AS hotel_id, h.name AS hotel, c.name AS city, h.star_rating AS star_rating, h.guest_rating AS guest_rating LIMIT 20",
+    "fallback": null,
+    "retrieved": [
+      "Marine Crest Hotel",
+      "Rajputana Palace Resort",
+      "Lake Pichola Palace"
+    ],
+    "seconds": 5.7
+  },
+  "vector_rag:Q5": {
+    "answer": "Himalayan Pines Resort, Snow Peak Retreat, and Beas River Cottages all allow pets and feature heating. Himalayan Pines Resort offers heated rooms and a small spa, Snow Peak Retreat features a fenced garden for dogs, and Beas River Cottages welcomes pets of any size.",
+    "route": null,
+    "cypher": null,
+    "fallback": null,
+    "retrieved": [
+      "Himalayan Pines Resort",
+      "Snow Peak Retreat",
+      "Beas River Cottages",
+      "Solang Valley Lodge",
+      "Aravalli Hills Resort"
+    ],
+    "seconds": 3.3
+  },
+  "graph_rag:Q5": {
+    "answer": "We have three hotels in Manali that allow pets and have heating. Snow Peak Retreat features a fenced garden for dogs, Himalayan Pines Resort welcomes small pets under ten kilograms, and Beas River Cottages allows pets of any size.",
+    "route": "graph",
+    "cypher": "MATCH (h:Hotel)-[:LOCATED_IN]->(c:City {name: 'Manali'}), (h)-[:HAS_POLICY]->(p:Policy {name: 'Pets Allowed'}), (h)-[:HAS_AMENITY]->(a:Amenity {name: 'Heating'}) RETURN h.id AS hotel_id, h.name AS hotel LIMIT 20",
+    "fallback": null,
+    "retrieved": [
+      "Snow Peak Retreat",
+      "Himalayan Pines Resort",
+      "Beas River Cottages"
+    ],
+    "seconds": 3.6
+  },
+  "vector_rag:Q6": {
+    "answer": "Marine Crest Hotel includes breakfast and is zero point two kilometres from Marine Drive Promenade. Sea Breeze Residency also includes breakfast and is zero point six kilometres from the Gateway of India. Calangute Shores Resort includes breakfast and is zero point three kilometres from Calangute Beach.",
+    "route": null,
+    "cypher": null,
+    "fallback": null,
+    "retrieved": [
+      "Marine Crest Hotel",
+      "Sea Breeze Residency",
+      "Juhu Palm Suites",
+      "Candolim Grand",
+      "Calangute Shores Resort"
+    ],
+    "seconds": 2.6
+  },
+  "graph_rag:Q6": {
+    "answer": "Calangute Shores Resort includes breakfast and is located just zero point three kilometres from the beach. It is a four-star resort with a guest rating of four point four.",
+    "route": "graph",
+    "cypher": "MATCH (h:Hotel)-[:HAS_AMENITY|HAS_POLICY|NEAR]->() MATCH (h)-[n:NEAR]->(a:Attraction) WHERE a.category = 'Beach' AND n.distance_km <= 1 MATCH (h)-[:HAS_POLICY]->(p:Policy {name: 'Breakfast Included'}) RETURN h.id AS hotel_id, h.name AS hotel, n.distance_km AS distance_km LIMIT 20",
+    "fallback": null,
+    "retrieved": [
+      "Calangute Shores Resort"
+    ],
+    "seconds": 4.0
+  },
+  "vector_rag:Q7": {
+    "answer": "Juhu Palm Suites has a non-refundable policy and offers apartment-style suites near Juhu Beach. Jaipur Budget Stay also has a non-refundable policy and is a simple option located near Jaipur Railway Station.",
+    "route": null,
+    "cypher": null,
+    "fallback": null,
+    "retrieved": [
+      "Marine Crest Hotel",
+      "Juhu Palm Suites",
+      "Fateh Sagar Inn",
+      "Sea Breeze Residency",
+      "Jaipur Budget Stay"
+    ],
+    "seconds": 3.4
+  },
+  "graph_rag:Q7": {
+    "answer": "Juhu Palm Suites requires prepayment and is a four-star property. Candolim Grand includes breakfast and is a five-star beachfront resort. Jaipur Budget Stay offers dormitory beds and is a two-star option. Beas River Cottages features riverside cottages and is also a two-star property. All four hotels have non-refundable bookings.",
+    "route": "graph",
+    "cypher": "MATCH (h:Hotel)-[:HAS_POLICY]->(p:Policy {name: 'Non-refundable'}) RETURN h.id AS hotel_id, h.name AS hotel LIMIT 20",
+    "fallback": null,
+    "retrieved": [
+      "Juhu Palm Suites",
+      "Candolim Grand",
+      "Jaipur Budget Stay",
+      "Beas River Cottages"
+    ],
+    "seconds": 3.6
+  },
+  "vector_rag:Q8": {
+    "answer": "You can stay at Pink City Haveli, which allows you to pay at the hotel and is zero point five kilometres from Hawa Mahal. It is an eighteenth-century haveli converted into a heritage hotel.",
+    "route": null,
+    "cypher": null,
+    "fallback": null,
+    "retrieved": [
+      "Pink City Haveli",
+      "Amber Fort View Hotel",
+      "Jaipur Budget Stay",
+      "Rajputana Palace Resort",
+      "Aravalli Hills Resort"
+    ],
+    "seconds": 3.6
+  },
+  "graph_rag:Q8": {
+    "answer": "You can stay at Pink City Haveli, which is an eighteenth-century heritage hotel. It is located zero point five kilometres from Hawa Mahal and offers the pay at hotel option.",
+    "route": "graph",
+    "cypher": "MATCH (h:Hotel)-[:LOCATED_IN]->(c:City {name: 'Jaipur'}), (h)-[n:NEAR]->(a:Attraction), (h)-[:HAS_POLICY]->(p:Policy {name: 'Pay at Hotel'}) WHERE (a.name = 'Hawa Mahal' OR a.name = 'City Palace') AND n.distance_km <= 1 RETURN h.id AS hotel_id, h.name AS hotel, a.name AS attraction, n.distance_km AS distance LIMIT 20",
+    "fallback": null,
+    "retrieved": [
+      "Pink City Haveli"
+    ],
+    "seconds": 4.9
+  }
+}

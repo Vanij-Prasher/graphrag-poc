@@ -106,7 +106,7 @@ QUESTION: {question}"""
 ANSWER_PROMPT = """You are a friendly hotel voice assistant. Answer the guest's question using ONLY the
 information below.
 - Speak naturally, as in a phone call: at most 3 short sentences. No lists, no markdown, no emojis.
-- If several hotels fit, say how many there are, then describe at most the 2 best fits.
+- {selection_rule}
 - Give the specific facts that answer the question.
 - Write every number as words, the way it is spoken: "three thousand six hundred rupees",
   "zero point seven kilometres", "seventy-two hours". This text is read aloud by a speech engine.
@@ -124,6 +124,9 @@ ROUTE_NOTES = {
     "vector": "similarity search. They may not all fit; only recommend the ones that do.",
     "both": "similarity search, then filtered by a database query on the question's conditions.",
 }
+
+SELECTION_SPOKEN = "If several hotels fit, say how many there are, then describe at most the 2 best fits."
+SELECTION_COMPLETE = "Name every hotel that fits (used for evaluation), with one short fact each."
 
 HOTEL_FACTS = """
 UNWIND $ids AS hid
@@ -172,7 +175,7 @@ class GraphRAG:
 
     # ---------- public ----------
 
-    def ask(self, question: str, answer: bool = True) -> dict:
+    def ask(self, question: str, answer: bool = True, complete: bool = False) -> dict:
         start = time.time()
         decision = self._route(question)
         route = decision.route.strip().lower()
@@ -224,9 +227,24 @@ class GraphRAG:
             # In the "both" route the query is only a filter; its rows are not the answer,
             # so only the ranked hotels are passed on (otherwise the model counts filter rows).
             rows_for_answer = result["query_rows"] if route == "graph" else []
-            result["answer"] = self._answer(question, route, rows_for_answer, hotels)
+            result["answer"] = self._answer(question, route, rows_for_answer, hotels, complete)
         result["seconds"] = round(time.time() - start, 1)
         return result
+
+    def vector_rag(self, question: str, complete: bool = False) -> dict:
+        """Baseline for evaluation: plain vector RAG with no router and no graph query."""
+        start = time.time()
+        ids = [h for h, _ in self._vector_search(question, VECTOR_TOP_K)]
+        hotels = self._hotel_facts(ids)
+        return {
+            "question": question,
+            "route": None,
+            "cypher": None,
+            "fallback": None,
+            "hotels": [h["name"] for h in hotels],
+            "answer": self._answer(question, "vector", [], hotels, complete),
+            "seconds": round(time.time() - start, 1),
+        }
 
     # ---------- steps ----------
 
@@ -272,13 +290,14 @@ class GraphRAG:
         by_id = {r["hotel_id"]: r.data() for r in records}
         return [by_id[i] for i in ids if i in by_id]
 
-    def _answer(self, question, route, rows, hotels):
+    def _answer(self, question, route, rows, hotels, complete=False):
         query_rows = ""
         if rows:
             query_rows = "DATABASE QUERY RESULT:\n" + "\n".join(str(r) for r in rows[:20]) + "\n\n"
         hotel_text = "\n\n".join(_format_hotel(h) for h in hotels) or "No hotels matched."
         prompt = ANSWER_PROMPT.format(
-            note=ROUTE_NOTES[route], question=question, query_rows=query_rows, hotels=hotel_text
+            note=ROUTE_NOTES[route], question=question, query_rows=query_rows, hotels=hotel_text,
+            selection_rule=SELECTION_COMPLETE if complete else SELECTION_SPOKEN,
         )
         return self._generate(self.answer_model, prompt, temperature=0.3).strip()
 

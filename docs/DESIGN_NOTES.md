@@ -188,6 +188,20 @@ Answer (Gemini): turns the retrieved facts into a short, spoken-style answer
 | Pet-friendly hotels within 2 km of a fort | Graph | Correct: Amber Fort View Hotel; generated Cypher matched the hand-written one |
 | Somewhere romantic with a beautiful view | Vector | Reasonable picks, but missed Lake Pichola Palace (see limitations) |
 | A quiet place in the mountains that allows pets | Both | After fixes: Cypher filters pets only, vector ranking puts Manali hotels first |
+- **Evaluation, 8 test questions, vector RAG vs hybrid GraphRAG** (`scripts/evaluate.py`, full table in
+  `data/eval/report.md`). Same answer model and same hotel facts for both systems; only retrieval differs.
+
+| System | Correct answers | Retrieved all expected hotels | Avg hotels retrieved | Avg seconds |
+|---|---|---|---|---|
+| Vector RAG (baseline) | 4/8 | 6/8 | 5.0 (always top 5) | 3.4 |
+| GraphRAG (hybrid) | **8/8** | **8/8** | 1.9 (exactly the expected number) | 4.2 |
+
+  - Vector RAG failed in two distinct ways: **retrieval misses** on "list all" questions (Q4, Q7: the
+    answers span more hotels than any top-5 search can return), and **reasoning errors** when the right
+    hotel *was* retrieved but the model also named wrong ones (Q3 cheapest room, Q6 distance + breakfast).
+  - GraphRAG retrieved exactly the right hotels every time (15 expected across 8 questions, 15 retrieved),
+    so the answer model had nothing wrong to choose from. Cost: about 0.8 s extra for the router call.
+  - Scoring is automatic (hotel names in the answer vs ground truth), with no LLM judge.
 
 ---
 
@@ -216,6 +230,14 @@ How to handle it in production:
 - **Model quirks:** the lite model occasionally drops spaces ("OldManali"); a stronger answer model or a
   light post-processing step would fix this.
 
+### Evaluation limitations
+- Small test set (8 questions), one run each: results are indicative, not statistically strong.
+- All 8 questions have checkable conditions, so all routed to the graph. The set favours GraphRAG by
+  design and does not yet test the vector or "both" routes; fuzzy questions should be added.
+- With 20 hotels, a top-5 vector search already sees 25% of the data. On a realistic dataset vector RAG
+  would miss far more, so the gap would likely grow.
+- Name-matching scoring is strict: a wrong hotel mentioned only to rule it out still counts as an error.
+
 ### Other limitations
 - Synthetic text is clean and consistent; real documents are messier, so real-world extraction
   accuracy will be lower than 100% and needs ongoing evaluation.
@@ -230,6 +252,6 @@ How to handle it in production:
 
 - [x] Vector index on hotel documents (Gemini Embedding 001)
 - [x] Router + text-to-Cypher + hybrid retrieval (graph / vector / both, with fallback)
-- [ ] Plain vector RAG baseline, scored on the 8 test questions
+- [x] Plain vector RAG baseline, scored on the 8 test questions
 - [ ] FastAPI backend
 - [ ] Next.js frontend on Vercel showing the answer and the graph path used
