@@ -1,4 +1,4 @@
-# GraphRAG Hotel Assistant 
+# GraphRAG POC: Hotel Assistant
 
 A proof of concept for **Retrieval-Augmented Generation over a knowledge graph**, built as the
 retrieval core for a conversational (voice) assistant. It answers multi-hop questions such as
